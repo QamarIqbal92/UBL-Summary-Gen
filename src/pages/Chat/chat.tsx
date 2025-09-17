@@ -18,7 +18,7 @@ interface Message {
 //comment
 
 const getCurrentTimestamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://compliance-uae-chatbot-epdbdtc5ezfqapg7.uaenorth-01.azurewebsites.net/query'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://bca-chatbot-fkbfd2cfa2b9gvh0.uaenorth-01.azurewebsites.net/query'
 
 const TypingIndicator = () => (
     <div className="message-container">

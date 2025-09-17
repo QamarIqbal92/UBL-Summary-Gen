@@ -11,7 +11,7 @@ import {
 import ProductCard from '../../components/ProductCard';
 import homeLogo from '../../assets/images/ubl-logo.png';
 import './home.scss';
-
+// import type { MainLayoutOutletContext } from '../../MainLayout';
 
 interface HomeProps {
     setUserInput: (input: string) => void;
@@ -20,6 +20,7 @@ interface HomeProps {
 const Home = ({ setUserInput }: HomeProps) => {
     const [input, setInput] = useState('');
     const navigate = useNavigate();
+    // const { isFocusMode } = useOutletContext<MainLayoutOutletContext>();
 
     const suggestionCards = [
         {
@@ -67,7 +68,7 @@ const Home = ({ setUserInput }: HomeProps) => {
         <div className="home-page-container">
             <header className="home-header text-center">
                 <img src={homeLogo} className="logo-img" alt="Company Logo" />
-                <h1 className="mt-3">Hello, I'm your dedicated compliance assistant</h1>
+                <h1 className="mt-3">Hello, I'm your dedicated BCA assistant</h1>
                 <p className="lead text-muted">How can I assist you today?</p>
             </header>
 
