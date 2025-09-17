@@ -9,7 +9,7 @@ interface FocusModeModalProps {
 }
 
 const sanitizeFileName = (value: string) => {
-    const cleaned = value.trim().replace(/[\\/:*?\"<>|]/g, '').replace(/\s+/g, '-');
+    const cleaned = value.trim().replace(/[\\/:*?\\"<>|]/g, '').replace(/\s+/g, '-');
     return cleaned || 'summary-report';
 };
 
@@ -105,7 +105,7 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                 doc.setFont('Times', bold ? 'bold' : 'normal');
                 doc.setFontSize(fontSize);
                 const lines = doc.splitTextToSize(text, maxWidth);
-                lines.forEach((line) => {
+                lines.forEach((line: string | string[]) => {
                     addPageIfNeeded(fontSize + lineGap);
                     doc.text(line, marginX, cursorY);
                     cursorY += fontSize + lineGap;
@@ -136,7 +136,7 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                     doc.setFont('Courier', 'normal');
                     doc.setFontSize(11);
                     const codeLines = doc.splitTextToSize(raw, maxWidth);
-                    codeLines.forEach((cl) => {
+                    codeLines.forEach((cl: string | string[]) => {
                         addPageIfNeeded(15);
                         doc.text(cl, marginX, cursorY);
                         cursorY += 15;
@@ -180,7 +180,7 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                     // marker
                     doc.text(marker, marginX, cursorY);
                     // text (indented)
-                    wrapped.forEach((w, i) => {
+                    wrapped.forEach((w: string | string[], i: number) => {
                         if (i === 0) {
                             doc.text(w, marginX + 18, cursorY);
                             cursorY += 16;
