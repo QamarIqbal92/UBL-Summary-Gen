@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    FaHeart,
-    FaGift,
-    FaHandHoldingUsd,
-    FaMapMarkedAlt,
-    FaPaperPlane,
-} from 'react-icons/fa';
+import { FaChartLine, FaPercentage, FaUserTie, FaBalanceScale, FaPaperPlane } from "react-icons/fa";
 
 import ProductCard from '../../components/ProductCard';
 import homeLogo from '../../assets/images/ubl-logo.png';
@@ -24,24 +18,24 @@ const Home = ({ setUserInput }: HomeProps) => {
 
     const suggestionCards = [
         {
-            title: 'Policy Documentation',
-            description: 'Give a brief summary of the document related to central banking policies.',
-            icon: <FaHeart size={20} />,
+            title: 'Yearly Revenue (2024)',
+            description: 'What is the yearly revenue of Lucky Cement for the year 2024?',
+            icon: <FaChartLine size={20} />,
         },
         {
-            title: 'Suspicious Activity Response',
-            description: 'How do we respond if we suspect a customer is trying to evade financial sanctions?',
-            icon: <FaGift size={20} />,
+            title: 'YoY Revenue Change',
+            description: 'What is the year-over-year change in revenue of Lucky Cement?',
+            icon: <FaPercentage size={20} />,
         },
         {
-            title: 'Error Correction Process',
-            description: 'What is the official process for submitting a grievance or correction request if a false positive occurs?',
-            icon: <FaHandHoldingUsd size={20} />,
+            title: 'Chief Executive Officer',
+            description: 'Who is the CEO of Lucky Cement?',
+            icon: <FaUserTie size={20} />,
         },
         {
-            title: 'Comparison and Screening Frequency',
-            description: 'What is the difference between the UN Consolidated List and the UAE Local Terrorist List, and how often should banks screen against them?',
-            icon: <FaMapMarkedAlt size={20} />,
+            title: 'Profit or Loss Status',
+            description: 'Is Lucky Cement currently operating in profit or loss?',
+            icon: <FaBalanceScale size={20} />,
         },
     ];
 
