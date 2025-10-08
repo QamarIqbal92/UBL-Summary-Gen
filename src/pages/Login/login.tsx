@@ -21,7 +21,7 @@ const Login = () => {
         { email: "saqib.saghir@ubl.com.pk", password: "United@123" },
         { email: "ahsan.adil@ubl.com.pk", password: "United@123" },
         { email: "masood.khan@ubl.com.pk", password: "United@123" },
-        { email: "admin@compliance.com", password: "admin1234" },
+        { email: "admin@bca.com", password: "admin1234" },
     ];
 
     const validateField = (name: 'email' | 'password', value: string) => {
