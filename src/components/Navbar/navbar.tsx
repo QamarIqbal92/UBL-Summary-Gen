@@ -19,6 +19,10 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
         navigate('/home');
     };
 
+    const toUpload = () => {
+        navigate('/upload');
+    };
+
     const handleLogout = () => {
         console.log('User logged out.');
         setIsOpen(false);
@@ -52,6 +56,11 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
                     <FiTarget size={18} />
                     <span>{'Summary Mode'}</span>
                 </button>
+
+                <button className="focus-toggle-btn" onClick={toUpload}>
+                    Upload
+                </button>
+
 
                 <UserProfile onLogout={handleLogout} />
 
