@@ -1,0 +1,42 @@
+.document-upload-page {
+  padding: 2rem 0;
+}
+
+.page-title {
+  margin-bottom: 1.5rem;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.helper-text {
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.file-list {
+  margin-top: 1.5rem;
+}
+
+.file-list-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.file-list .list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-list .btn-link {
+  padding: 0;
+}
