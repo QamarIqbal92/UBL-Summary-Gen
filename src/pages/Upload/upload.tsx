@@ -85,7 +85,7 @@ const Upload = () => {
         const fileNames = selectedFiles.map((file) => file.name);
         const formData = new FormData();
         selectedFiles.forEach((file) => {
-            formData.append('documents', file);
+            formData.append('files', file);
         });
 
         setIsSending(true);
