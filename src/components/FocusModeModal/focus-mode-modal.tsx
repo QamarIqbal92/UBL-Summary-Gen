@@ -123,7 +123,7 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                 return runs.length > 0 ? runs : [new TextRun({ text: input })];
             };
 
-            const headingLevels: Record<number, HeadingLevel> = {
+            const headingLevels: Record<number, typeof HeadingLevel[keyof typeof HeadingLevel]> = {
                 1: HeadingLevel.HEADING_1,
                 2: HeadingLevel.HEADING_2,
                 3: HeadingLevel.HEADING_3,
@@ -156,7 +156,6 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                                 new TextRun({
                                     text: rawLine || ' ',
                                     font: 'Consolas',
-                                    preserve: true,
                                 }),
                             ],
                         })
