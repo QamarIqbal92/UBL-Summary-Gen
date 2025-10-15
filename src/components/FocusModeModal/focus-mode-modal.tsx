@@ -8,6 +8,8 @@ interface FocusModeModalProps {
     onDisable: () => void;
 }
 
+type DocxModule = typeof import('docx');
+
 const sanitizeFileName = (value: string) => {
     const cleaned = value.trim().replace(/[\\/:*?\\"<>|]/g, '').replace(/\s+/g, '-');
     return cleaned || 'summary-report';
@@ -25,8 +27,8 @@ const buildFallbackFileName = (companyName: string, air: string) => {
     return 'summary-report';
 };
 
-const ensurePdfExtension = (fileName: string) => {
-    return fileName.toLowerCase().endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+const ensureDocxExtension = (fileName: string) => {
+    return fileName.toLowerCase().endsWith('.docx') ? fileName : `${fileName}.docx`;
 };
 
 const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
@@ -83,140 +85,274 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                 throw new Error('Server returned JSON without a "summary.summary" field.');
             }
 
-            // Lazy-load jsPDF to avoid initial bundle bloat
-            const { jsPDF } = await import('jspdf');
+            const docx = (await import('docx')) as DocxModule;
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, LevelFormat } = docx;
 
-            // --- PDF rendering (markdown-aware but lightweight) ---
-            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-            const marginX = 48;
-            const marginY = 56;
-            const maxY = doc.internal.pageSize.getHeight() - marginY;
-            const maxWidth = doc.internal.pageSize.getWidth() - marginX * 2;
-            let cursorY = marginY;
+            type ParagraphInstance = InstanceType<typeof Paragraph>;
+            type TextRunInstance = InstanceType<typeof TextRun>;
 
-            const addPageIfNeeded = (increment = 0) => {
-                if (cursorY + increment > maxY) {
-                    doc.addPage();
-                    cursorY = marginY;
+            const parseInlineMarkdown = (input: string): TextRunInstance[] => {
+                if (!input) {
+                    return [new TextRun({ text: '' })];
                 }
+
+                const runs: TextRunInstance[] = [];
+                const boldPattern = /\*\*(.+?)\*\*/g;
+                let cursor = 0;
+                let match: RegExpExecArray | null;
+
+                while ((match = boldPattern.exec(input)) !== null) {
+                    if (match.index > cursor) {
+                        runs.push(new TextRun({ text: input.slice(cursor, match.index) }));
+                    }
+
+                    runs.push(
+                        new TextRun({
+                            text: match[1],
+                            bold: true,
+                        })
+                    );
+
+                    cursor = match.index + match[0].length;
+                }
+
+                if (cursor < input.length) {
+                    runs.push(new TextRun({ text: input.slice(cursor) }));
+                }
+
+                return runs.length > 0 ? runs : [new TextRun({ text: input })];
             };
 
-            const writeParagraph = (text: string, fontSize = 12, bold = false, lineGap = 4) => {
-                doc.setFont('Times', bold ? 'bold' : 'normal');
-                doc.setFontSize(fontSize);
-                const lines = doc.splitTextToSize(text, maxWidth);
-                lines.forEach((line: string | string[]) => {
-                    addPageIfNeeded(fontSize + lineGap);
-                    doc.text(line, marginX, cursorY);
-                    cursorY += fontSize + lineGap;
-                });
+            const headingLevels: Record<number, HeadingLevel> = {
+                1: HeadingLevel.HEADING_1,
+                2: HeadingLevel.HEADING_2,
+                3: HeadingLevel.HEADING_3,
+                4: HeadingLevel.HEADING_4,
+                5: HeadingLevel.HEADING_5,
+                6: HeadingLevel.HEADING_6,
             };
 
-            const writeSpacer = (h = 10) => {
-                addPageIfNeeded(h);
-                cursorY += h;
-            };
-
-            // very small markdown pass: #, ##, ###, lists, horizontal rules, code fence
+            const paragraphs: ParagraphInstance[] = [];
             const lines = summaryText.replace(/\r\n/g, '\n').split('\n');
-
             let inCodeBlock = false;
-            lines.forEach((raw) => {
-                const line = raw.trimRight();
 
-                // Code fence ```
-                if (line.trim().startsWith('```')) {
+            lines.forEach((rawLine) => {
+                const trimmedRight = rawLine.replace(/\s+$/, '');
+                const trimmed = trimmedRight.trim();
+
+                if (trimmed.startsWith('`')) {
                     inCodeBlock = !inCodeBlock;
-                    writeSpacer(6);
+                    if (!inCodeBlock) {
+                        paragraphs.push(new Paragraph({ text: '' }));
+                    }
                     return;
                 }
 
                 if (inCodeBlock) {
-                    // monospace look with bold off and a boxy background effect (light)
-                    doc.setFont('Courier', 'normal');
-                    doc.setFontSize(11);
-                    const codeLines = doc.splitTextToSize(raw, maxWidth);
-                    codeLines.forEach((cl: string | string[]) => {
-                        addPageIfNeeded(15);
-                        doc.text(cl, marginX, cursorY);
-                        cursorY += 15;
-                    });
+                    paragraphs.push(
+                        new Paragraph({
+                            style: 'CodeBlock',
+                            children: [
+                                new TextRun({
+                                    text: rawLine || ' ',
+                                    font: 'Consolas',
+                                    preserve: true,
+                                }),
+                            ],
+                        })
+                    );
                     return;
                 }
 
-                // Horizontal rule --- or ***
-                if (/^(-{3,}|\*{3,})$/.test(line.trim())) {
-                    addPageIfNeeded(12);
-                    doc.setLineWidth(0.7);
-                    doc.line(marginX, cursorY, marginX + maxWidth, cursorY);
-                    cursorY += 12;
+                if (trimmed === '') {
+                    paragraphs.push(new Paragraph({ text: '' }));
                     return;
                 }
 
-                // Headings
-                if (/^#{1,6}\s+/.test(line)) {
-                    const level = (line.match(/^#+/)?.[0].length ?? 1);
-                    const text = line.replace(/^#{1,6}\s+/, '').trim();
-                    const sizes = { 1: 20, 2: 18, 3: 16, 4: 14, 5: 13, 6: 12 } as const;
-                    const size = sizes[Math.min(level, 6) as 1 | 2 | 3 | 4 | 5 | 6];
-                    writeSpacer(level <= 2 ? 8 : 6);
-                    writeParagraph(text, size, true, 6);
-                    writeSpacer(2);
+                if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+                    paragraphs.push(new Paragraph({ thematicBreak: true }));
                     return;
                 }
 
-                // Lists
-                if (/^(\*|-|\+)\s+/.test(line) || /^\d+\.\s+/.test(line)) {
-                    // group consecutive list items
-                    const bullet = /^(\*|-|\+)\s+/.test(line);
-                    const marker = bullet ? '•' : (line.match(/^(\d+)\./)?.[1] ?? '1') + '.';
-                    doc.setFont('Times', 'normal');
-                    doc.setFontSize(12);
-
-                    const itemText = line.replace(/^(\*|-|\+|\d+\.)\s+/, '');
-                    const wrapped = doc.splitTextToSize(itemText, maxWidth - 20);
-
-                    addPageIfNeeded(16);
-                    // marker
-                    doc.text(marker, marginX, cursorY);
-                    // text (indented)
-                    wrapped.forEach((w: string | string[], i: number) => {
-                        if (i === 0) {
-                            doc.text(w, marginX + 18, cursorY);
-                            cursorY += 16;
-                        } else {
-                            addPageIfNeeded(16);
-                            doc.text(w, marginX + 18, cursorY);
-                            cursorY += 16;
-                        }
-                    });
+                const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+                if (headingMatch) {
+                    const level = Math.min(headingMatch[1].length, 6);
+                    const content = headingMatch[2].trim();
+                    paragraphs.push(
+                        new Paragraph({
+                            heading: headingLevels[level],
+                            children: parseInlineMarkdown(content),
+                        })
+                    );
                     return;
                 }
 
-                // Empty line -> paragraph spacer
-                if (line.trim() === '') {
-                    writeSpacer(6);
+                if (/^(\*|-|\+)\s+/.test(trimmed)) {
+                    const content = trimmed.replace(/^(\*|-|\+)\s+/, '');
+                    paragraphs.push(
+                        new Paragraph({
+                            children: parseInlineMarkdown(content),
+                            numbering: { reference: 'bullet-list', level: 0 },
+                        })
+                    );
                     return;
                 }
 
-                // Normal paragraph
-                writeParagraph(line);
+                if (/^\d+\.\s+/.test(trimmed)) {
+                    const content = trimmed.replace(/^\d+\.\s+/, '');
+                    paragraphs.push(
+                        new Paragraph({
+                            children: parseInlineMarkdown(content),
+                            numbering: { reference: 'numbered-list', level: 0 },
+                        })
+                    );
+                    return;
+                }
+
+                if (trimmed.startsWith('>')) {
+                    const content = trimmed.replace(/^>\s*/, '');
+                    paragraphs.push(
+                        new Paragraph({
+                            style: 'Quote',
+                            children: parseInlineMarkdown(content),
+                        })
+                    );
+                    return;
+                }
+
+                paragraphs.push(
+                    new Paragraph({
+                        children: parseInlineMarkdown(trimmedRight),
+                    })
+                );
             });
 
-            // Filename
-            const fallbackName = ensurePdfExtension(
+            if (paragraphs.length === 0) {
+                paragraphs.push(
+                    new Paragraph({
+                        children: [new TextRun({ text: 'Summary unavailable.' })],
+                    })
+                );
+            }
+
+            const doc = new Document({
+                styles: {
+                    default: {
+                        document: {
+                            run: {
+                                font: 'Calibri',
+                                size: 24,
+                            },
+                            paragraph: {
+                                spacing: { after: 240 },
+                            },
+                        },
+                    },
+                    paragraphStyles: [
+                        {
+                            id: 'CodeBlock',
+                            name: 'Code Block',
+                            basedOn: 'Normal',
+                            next: 'Normal',
+                            run: {
+                                font: 'Consolas',
+                                size: 22,
+                            },
+                            paragraph: {
+                                spacing: { before: 120, after: 120 },
+                                shading: { fill: 'EDEDED' },
+                            },
+                        },
+                        {
+                            id: 'Quote',
+                            name: 'Quote',
+                            basedOn: 'Normal',
+                            next: 'Normal',
+                            run: {
+                                italics: true,
+                            },
+                            paragraph: {
+                                spacing: { before: 120, after: 120 },
+                                indent: { left: 720 },
+                            },
+                        },
+                    ],
+                },
+                numbering: {
+                    config: [
+                        {
+                            reference: 'numbered-list',
+                            levels: [
+                                {
+                                    level: 0,
+                                    format: LevelFormat.DECIMAL,
+                                    text: '%1.',
+                                    alignment: AlignmentType.START,
+                                    style: {
+                                        paragraph: {
+                                            indent: { left: 720, hanging: 360 },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                        {
+                            reference: 'bullet-list',
+                            levels: [
+                                {
+                                    level: 0,
+                                    format: LevelFormat.BULLET,
+                                    text: '\u2022',
+                                    alignment: AlignmentType.START,
+                                    style: {
+                                        paragraph: {
+                                            indent: { left: 720, hanging: 360 },
+                                        },
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+                sections: [
+                    {
+                        properties: {
+                            page: {
+                                margin: {
+                                    top: 1440,
+                                    bottom: 1440,
+                                    left: 1440,
+                                    right: 1440,
+                                },
+                            },
+                        },
+                        children: paragraphs,
+                    },
+                ],
+            });
+
+            const blob = await Packer.toBlob(doc);
+
+            const fallbackName = ensureDocxExtension(
                 sanitizeFileName(buildFallbackFileName(trimmedCompanyName, trimmedAir))
             );
 
-            // Download
-            doc.save(fallbackName);
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = fallbackName;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            window.URL.revokeObjectURL(url);
         } catch (err) {
-            console.error('Failed to generate summary PDF:', err);
+            console.error('Failed to generate summary Word document:', err);
             setError('Unable to generate the summary right now. Please try again later.');
         } finally {
             setIsGenerating(false);
         }
     };
+
 
 
     return (
