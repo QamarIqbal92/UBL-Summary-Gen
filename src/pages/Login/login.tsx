@@ -6,22 +6,24 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import loginImage from '../../assets/images/login-image.jpg';
 import logo from '../../assets/images/ubl-logo.png';
+import { type UserRole } from '../../types/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const navigate = useNavigate();
-    const users: { email: string; password: string }[] = [
-        { email: "ovais.saeed@ubl.com.pk", password: "United@123" },
-        { email: "asma.shahbaz@ubl.com.pk", password: "United@123" },
-        { email: "suleman.pervez@ubl.com.pk", password: "United@123" },
-        { email: "zia.akhtar@ubl.com.pk", password: "United@123" },
-        { email: "muh.rizwan@ubl.com.pk", password: "United@123" },
-        { email: "saqib.saghir@ubl.com.pk", password: "United@123" },
-        { email: "ahsan.adil@ubl.com.pk", password: "United@123" },
-        { email: "masood.khan@ubl.com.pk", password: "United@123" },
-        { email: "admin@bca.com", password: "admin1234" },
+    const users: { email: string; password: string; role: UserRole }[] = [
+        { email: "ovais.saeed@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "asma.shahbaz@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "suleman.pervez@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "zia.akhtar@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "muh.rizwan@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "saqib.saghir@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "ahsan.adil@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "masood.khan@ubl.com.pk", password: "United@123", role: "standard" },
+        { email: "admin@bca.com", password: "admin1234", role: "standard" },
+        { email: "superadmin@bca.com", password: "admin1234", role: "superAdmin" },
     ];
 
     const validateField = (name: 'email' | 'password', value: string) => {
@@ -59,13 +61,19 @@ const Login = () => {
 
 
             if (user) {
+                localStorage.setItem('userEmail', user.email);
+                localStorage.setItem('userRole', user.role);
                 toast.success('Login successful!', {
                     position: 'top-center',
                     autoClose: 1500,
                 });
 
                 setTimeout(() => {
-                    navigate('/home');
+                    if (user.role === 'superAdmin') {
+                        navigate('/upload');
+                    } else {
+                        navigate('/home');
+                    }
                 }, 2000);
             } else {
                 toast.error('Invalid email or password.', {
