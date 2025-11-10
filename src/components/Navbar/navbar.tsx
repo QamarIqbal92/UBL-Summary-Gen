@@ -22,6 +22,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
     const isHomeActive =
         location.pathname.startsWith('/home') ||
         location.pathname.startsWith('/conversation');
+    const canUseSummaryToggle = !isSuperAdmin || isHomeActive;
 
     const handleAdminViewChange = (view: 'home' | 'upload') => {
         if (view === 'home') {
@@ -44,7 +45,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
     };
 
     const handleFocusToggle = () => {
-        if (isSuperAdmin) {
+        if (!canUseSummaryToggle) {
             return;
         }
         onFocusToggle();
@@ -64,7 +65,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
             </div>
 
             <div className={`nav-items ${isOpen ? 'open' : ''}`}>
-                {!isSuperAdmin && (
+                {canUseSummaryToggle && (
                     <button
                         type="button"
                         className="focus-toggle-btn"

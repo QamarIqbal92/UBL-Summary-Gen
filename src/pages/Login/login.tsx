@@ -61,11 +61,7 @@ const Login = () => {
                     });
 
                     setTimeout(() => {
-                        if (normalizedRole === 'superAdmin') {
-                            navigate('/upload');
-                        } else {
-                            navigate('/home');
-                        }
+                        navigate('/home');
                     }, 2000);
                 } else {
                     toast.error('Invalid email or password.', {
