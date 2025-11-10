@@ -44,7 +44,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Routes with Navbar and Layout */}
-        <Route element={<RequireRole allowedRoles={['standard']} />}>
+        <Route element={<RequireRole allowedRoles={['standard', 'superAdmin']} />}>
           <Route element={<MainLayout />}>
             <Route
               path="/home"

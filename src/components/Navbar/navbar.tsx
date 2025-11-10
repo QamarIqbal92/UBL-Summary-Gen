@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FiTarget } from 'react-icons/fi';
 import UserProfile from './../UserProfile/userprofile';
 import { IoMenu, IoClose } from 'react-icons/io5';
@@ -15,8 +15,22 @@ interface NavBarProps {
 const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
     const role = (localStorage.getItem('userRole') as UserRole | null) ?? null;
     const isSuperAdmin = role === 'superAdmin';
+    const isUploadActive = location.pathname.startsWith('/upload');
+    const isHomeActive =
+        location.pathname.startsWith('/home') ||
+        location.pathname.startsWith('/conversation');
+
+    const handleAdminViewChange = (view: 'home' | 'upload') => {
+        if (view === 'home') {
+            navigate('/home');
+        } else {
+            navigate('/upload');
+        }
+        setIsOpen(false);
+    };
 
     const toDefaultRoute = () => {
         navigate(isSuperAdmin ? '/upload' : '/home');
@@ -60,6 +74,27 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
                         <FiTarget size={18} />
                         <span>{'Summary Mode'}</span>
                     </button>
+                )}
+
+                {isSuperAdmin && (
+                    <div className="admin-view-toggle" role="group" aria-label="Admin interface toggle">
+                        <button
+                            type="button"
+                            className={`toggle-btn ${isUploadActive ? 'active' : ''}`}
+                            onClick={() => handleAdminViewChange('upload')}
+                            aria-pressed={isUploadActive}
+                        >
+                            Upload
+                        </button>
+                        <button
+                            type="button"
+                            className={`toggle-btn ${isHomeActive ? 'active' : ''}`}
+                            onClick={() => handleAdminViewChange('home')}
+                            aria-pressed={isHomeActive}
+                        >
+                            Home
+                        </button>
+                    </div>
                 )}
 
                 <UserProfile onLogout={handleLogout} />

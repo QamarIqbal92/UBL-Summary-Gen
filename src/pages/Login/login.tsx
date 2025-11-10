@@ -7,24 +7,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import loginImage from '../../assets/images/login-image.jpg';
 import logo from '../../assets/images/ubl-logo.png';
 import { type UserRole } from '../../types/auth';
+import { loginUser } from '../../services/authService';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const navigate = useNavigate();
-    const users: { email: string; password: string; role: UserRole }[] = [
-        { email: "ovais.saeed@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "asma.shahbaz@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "suleman.pervez@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "zia.akhtar@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "muh.rizwan@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "saqib.saghir@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "ahsan.adil@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "masood.khan@ubl.com.pk", password: "United@123", role: "standard" },
-        { email: "admin@bca.com", password: "admin1234", role: "standard" },
-        { email: "superadmin@bca.com", password: "admin1234", role: "superAdmin" },
-    ];
 
     const validateField = (name: 'email' | 'password', value: string) => {
         let error = '';
@@ -48,38 +38,49 @@ const Login = () => {
         return !error;
     };
 
-    const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const isEmailValid = validateField('email', email);
         const isPasswordValid = validateField('password', password);
 
         if (isEmailValid && isPasswordValid) {
 
-            const user = users.find(
-                (u) => u.email === email && u.password === password
-            );
+            try {
+                setIsSubmitting(true);
+                const response = await loginUser({ email, password });
 
+                if (response.success && response.role) {
+                    const normalizedRole: UserRole = response.role === 'ADMIN' ? 'superAdmin' : 'standard';
 
-            if (user) {
-                localStorage.setItem('userEmail', user.email);
-                localStorage.setItem('userRole', user.role);
-                toast.success('Login successful!', {
-                    position: 'top-center',
-                    autoClose: 1500,
-                });
+                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userRole', normalizedRole);
 
-                setTimeout(() => {
-                    if (user.role === 'superAdmin') {
-                        navigate('/upload');
-                    } else {
-                        navigate('/home');
-                    }
-                }, 2000);
-            } else {
-                toast.error('Invalid email or password.', {
+                    toast.success('Login successful!', {
+                        position: 'top-center',
+                        autoClose: 1500,
+                    });
+
+                    setTimeout(() => {
+                        if (normalizedRole === 'superAdmin') {
+                            navigate('/upload');
+                        } else {
+                            navigate('/home');
+                        }
+                    }, 2000);
+                } else {
+                    toast.error('Invalid email or password.', {
+                        position: 'top-center',
+                        autoClose: 3000,
+                    });
+                }
+            } catch (error) {
+                toast.error('Unable to login right now. Please try again.', {
                     position: 'top-center',
                     autoClose: 3000,
                 });
+                console.log(error)
+            } finally {
+                setIsSubmitting(false);
             }
         }
     };
@@ -151,9 +152,9 @@ const Login = () => {
                         <button
                             type="submit"
                             className="btn btn-primary w-100 fw-bold py-2"
-                            disabled={!email || !password}
+                            disabled={!email || !password || isSubmitting}
                         >
-                            LOG IN
+                            {isSubmitting ? 'LOGGING IN...' : 'LOG IN'}
                         </button>
                     </form>
                 </div>
