@@ -79,10 +79,14 @@ const FocusModeModal = ({ onClose, onDisable }: FocusModeModalProps) => {
                 }
             );
 
-            // shape: { summary: { summary: "markdown/text..." } }
-            const summaryText: string | undefined = response?.data?.summary?.summary;
+            const summaryPayload = response?.data?.summary;
+            const summaryText: string | undefined =
+                typeof summaryPayload === 'string'
+                    ? summaryPayload
+                    : (summaryPayload as { summary?: string } | undefined)?.summary;
+
             if (!summaryText) {
-                throw new Error('Server returned JSON without a "summary.summary" field.');
+                throw new Error('Server returned JSON without summary text.');
             }
 
             const docx = (await import('docx')) as DocxModule;
