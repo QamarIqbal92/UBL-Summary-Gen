@@ -5,6 +5,15 @@ import './upload.scss';
 const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
 const Upload = () => {
+    const [userName] = useState(() => {
+        const storedName = localStorage.getItem('userName')?.trim();
+        if (storedName) {
+            return storedName;
+        }
+        const storedEmail = localStorage.getItem('userEmail') ?? '';
+        const emailName = storedEmail.split('@')[0]?.trim();
+        return emailName || 'user';
+    });
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [sentFiles, setSentFiles] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -93,7 +102,7 @@ const Upload = () => {
 
         try {
             await uploadDocuments(formData);
-            setStatusMessage('The following documents have been sent by xyz user:');
+            setStatusMessage(`The following documents have been sent by ${userName || 'user'}:`);
             setSentFiles(fileNames);
             setSelectedFiles([]);
         } catch (error) {

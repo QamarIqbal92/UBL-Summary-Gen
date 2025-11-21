@@ -10,6 +10,11 @@ import { type UserRole } from '../../types/auth';
 import { loginUser } from '../../services/authService';
 
 const Login = () => {
+    const extractUserName = (address: string) => {
+        const localPart = address.split('@')[0] ?? '';
+        return localPart.trim();
+    };
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,12 +52,19 @@ const Login = () => {
 
             try {
                 setIsSubmitting(true);
-                const response = await loginUser({ email, password });
+                const trimmedEmail = email.trim();
+                const response = await loginUser({ email: trimmedEmail, password });
 
                 if (response.success && response.role) {
                     const normalizedRole: UserRole = response.role === 'ADMIN' ? 'superAdmin' : 'standard';
+                    const userName = extractUserName(trimmedEmail);
 
-                    localStorage.setItem('userEmail', email);
+                    localStorage.setItem('userEmail', trimmedEmail);
+                    if (userName) {
+                        localStorage.setItem('userName', userName);
+                    } else {
+                        localStorage.removeItem('userName');
+                    }
                     localStorage.setItem('userRole', normalizedRole);
 
                     toast.success('Login successful!', {

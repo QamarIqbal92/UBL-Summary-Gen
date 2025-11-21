@@ -39,6 +39,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
 
     const handleLogout = () => {
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userName');
         localStorage.removeItem('userRole');
         setIsOpen(false);
         navigate('/login');
