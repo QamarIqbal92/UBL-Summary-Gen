@@ -101,7 +101,7 @@ const Upload = () => {
         setErrorMessage(null);
 
         try {
-            await uploadDocuments(formData);
+            await uploadDocuments(formData, userName || 'user');
             setStatusMessage(`The following documents have been sent by ${userName || 'user'}:`);
             setSentFiles(fileNames);
             setSelectedFiles([]);
