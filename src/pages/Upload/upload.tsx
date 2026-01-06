@@ -1,5 +1,5 @@
 import { type ChangeEvent, useRef, useState } from 'react';
-import { uploadDocuments } from '../../services/documentService';
+import { getJobStatus, uploadDocuments } from '../../services/documentService';
 import './upload.scss';
 
 const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
@@ -17,6 +17,9 @@ const Upload = () => {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [sentFiles, setSentFiles] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
+    const [uploadResponseMessage, setUploadResponseMessage] = useState<string | null>(null);
+    const [jobStatusMessage, setJobStatusMessage] = useState<string | null>(null);
+    const [isCheckingJobStatus, setIsCheckingJobStatus] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
     const [isFileInputDisabled, setIsFileInputDisabled] = useState(false);
@@ -98,16 +101,45 @@ const Upload = () => {
         });
 
         setIsSending(true);
+        setUploadResponseMessage(null);
+        setJobStatusMessage(null);
         setErrorMessage(null);
 
         try {
-            await uploadDocuments(formData, userName || 'user');
+            const response = await uploadDocuments(formData, userName || 'user');
+            const responseMessage = response?.data?.message as string | undefined;
+            const jobId = response?.data?.job_id as string | undefined;
+
+            setUploadResponseMessage(responseMessage ?? null);
             setStatusMessage(`The following documents have been sent by ${userName || 'user'}:`);
             setSentFiles(fileNames);
             setSelectedFiles([]);
+
+            if (jobId) {
+                setIsCheckingJobStatus(true);
+                setJobStatusMessage(null);
+                try {
+                    const jobStatusResponse = await getJobStatus(jobId);
+                    const statusData = jobStatusResponse?.data;
+                    const derivedMessage =
+                        typeof statusData === 'string'
+                            ? statusData
+                            : statusData?.message ??
+                              statusData?.status ??
+                              JSON.stringify(statusData);
+
+                    setJobStatusMessage(derivedMessage ?? null);
+                } catch (jobStatusError) {
+                    console.error('Failed to fetch job status', jobStatusError);
+                    setJobStatusMessage('Failed to fetch job status.');
+                } finally {
+                    setIsCheckingJobStatus(false);
+                }
+            }
         } catch (error) {
             console.error('Failed to send documents', error);
             setErrorMessage('Failed to send documents. Please try again.');
+            setUploadResponseMessage(null);
         } finally {
             setIsSending(false);
             setIsFileInputDisabled(false);
@@ -158,6 +190,25 @@ const Upload = () => {
                             <li key={name}>{name}</li>
                         ))}
                     </ul>
+                </div>
+            )}
+
+            {uploadResponseMessage && (
+                <div className='alert alert-info mt-2' role='alert'>
+                    {uploadResponseMessage}
+                </div>
+            )}
+
+            {jobStatusMessage && (
+                <div className='alert alert-secondary mt-2' role='alert'>
+                    {jobStatusMessage}
+                </div>
+            )}
+
+            {isCheckingJobStatus && (
+                <div className='job-status-loader mt-2' aria-label='Checking job status'>
+                    <span className='spinner' />
+                    <span className='ms-2'>Checking job status...</span>
                 </div>
             )}
 

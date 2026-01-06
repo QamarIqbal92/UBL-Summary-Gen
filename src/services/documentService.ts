@@ -8,3 +8,7 @@ export const uploadDocuments = async (formData: FormData, username: string) => {
     },
   });
 };
+
+export const getJobStatus = async (jobId: string) => {
+  return api.get(`job_status/${jobId}`);
+};
