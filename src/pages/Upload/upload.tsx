@@ -148,7 +148,8 @@ const Upload = () => {
                         const record = statusData as Record<string, unknown>;
                         const result = record.result as Record<string, unknown> | undefined;
                         const message = result?.message as string | undefined;
-                        return message ?? null;
+                        const error = result?.error as string | undefined;
+                        return message ?? error ?? null;
                     }
                     return null;
                 };
