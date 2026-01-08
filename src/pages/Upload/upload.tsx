@@ -1,4 +1,4 @@
-import { type ChangeEvent, useRef, useState } from 'react';
+import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { getJobStatus, uploadDocuments } from '../../services/documentService';
 import './upload.scss';
 
@@ -18,12 +18,30 @@ const Upload = () => {
     const [sentFiles, setSentFiles] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
     const [uploadResponseMessage, setUploadResponseMessage] = useState<string | null>(null);
-    const [jobStatusMessage, setJobStatusMessage] = useState<string | null>(null);
+    const [jobResultMessage, setJobResultMessage] = useState<string | null>(null);
+    const [jobStatusLabel, setJobStatusLabel] = useState<string | null>(null);
     const [isCheckingJobStatus, setIsCheckingJobStatus] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isSending, setIsSending] = useState(false);
     const [isFileInputDisabled, setIsFileInputDisabled] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const jobStatusIntervalRef = useRef<number | null>(null);
+    const jobStatusInFlightRef = useRef(false);
+
+    const stopJobStatusPolling = () => {
+        if (jobStatusIntervalRef.current !== null) {
+            window.clearInterval(jobStatusIntervalRef.current);
+            jobStatusIntervalRef.current = null;
+        }
+        jobStatusInFlightRef.current = false;
+        setIsCheckingJobStatus(false);
+    };
+
+    useEffect(() => {
+        return () => {
+            stopJobStatusPolling();
+        };
+    }, []);
 
     const openFileDialog = () => {
         if (isFileInputDisabled) {
@@ -102,7 +120,8 @@ const Upload = () => {
 
         setIsSending(true);
         setUploadResponseMessage(null);
-        setJobStatusMessage(null);
+        setJobResultMessage(null);
+        setJobStatusLabel(null);
         setErrorMessage(null);
 
         try {
@@ -116,24 +135,80 @@ const Upload = () => {
             setSelectedFiles([]);
 
             if (jobId) {
+                stopJobStatusPolling();
                 setIsCheckingJobStatus(true);
-                setJobStatusMessage(null);
-                try {
-                    const jobStatusResponse = await getJobStatus(jobId);
-                    const statusData = jobStatusResponse?.data;
-                    const derivedMessage =
-                        typeof statusData === 'string'
-                            ? statusData
-                            : statusData?.message ??
-                              statusData?.status ??
-                              JSON.stringify(statusData);
+                setJobResultMessage(null);
+                setJobStatusLabel(null);
 
-                    setJobStatusMessage(derivedMessage ?? null);
-                } catch (jobStatusError) {
-                    console.error('Failed to fetch job status', jobStatusError);
-                    setJobStatusMessage('Failed to fetch job status.');
-                } finally {
-                    setIsCheckingJobStatus(false);
+                const capitalizeFirstLetter = (value: string) =>
+                    value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+                const deriveResultMessage = (statusData: unknown) => {
+                    if (statusData && typeof statusData === 'object') {
+                        const record = statusData as Record<string, unknown>;
+                        const result = record.result as Record<string, unknown> | undefined;
+                        const message = result?.message as string | undefined;
+                        return message ?? null;
+                    }
+                    return null;
+                };
+
+                const deriveStatusLabel = (statusData: unknown) => {
+                    if (statusData && typeof statusData === 'object') {
+                        const record = statusData as Record<string, unknown>;
+                        const status = record.status as string | undefined;
+                        return status ? capitalizeFirstLetter(status) : null;
+                    }
+                    if (typeof statusData === 'string') {
+                        return capitalizeFirstLetter(statusData);
+                    }
+                    return null;
+                };
+
+                const isCompletedStatus = (statusData: unknown) => {
+                    if (typeof statusData === 'string') {
+                        return statusData.toLowerCase().includes('completed');
+                    }
+                    if (statusData && typeof statusData === 'object') {
+                        const record = statusData as Record<string, unknown>;
+                        const status = (record.status as string | undefined)?.toLowerCase();
+                        return status === 'completed' || status?.includes('completed');
+                    }
+                    return false;
+                };
+
+                const pollJobStatus = async () => {
+                    if (jobStatusInFlightRef.current) {
+                        return false;
+                    }
+                    jobStatusInFlightRef.current = true;
+                    try {
+                        const jobStatusResponse = await getJobStatus(jobId);
+                        const statusData = jobStatusResponse?.data;
+                        const derivedMessage = deriveResultMessage(statusData);
+                        const derivedStatusLabel = deriveStatusLabel(statusData);
+                        setJobResultMessage(derivedMessage ?? null);
+                        setJobStatusLabel(derivedStatusLabel ?? null);
+
+                        if (isCompletedStatus(statusData)) {
+                            stopJobStatusPolling();
+                            return true;
+                        }
+                    } catch (jobStatusError) {
+                        console.error('Failed to fetch job status', jobStatusError);
+                        setJobResultMessage('Failed to fetch job status.');
+                        setJobStatusLabel(null);
+                        stopJobStatusPolling();
+                        return true;
+                    } finally {
+                        jobStatusInFlightRef.current = false;
+                    }
+                    return false;
+                };
+
+                const completed = await pollJobStatus();
+                if (!completed && !jobStatusIntervalRef.current) {
+                    jobStatusIntervalRef.current = window.setInterval(pollJobStatus, 5000);
                 }
             }
         } catch (error) {
@@ -199,9 +274,10 @@ const Upload = () => {
                 </div>
             )}
 
-            {jobStatusMessage && (
+            {jobResultMessage && (
                 <div className='alert alert-secondary mt-2' role='alert'>
-                    {jobStatusMessage}
+                    {jobStatusLabel && <div className='fw-semibold'>{jobStatusLabel}</div>}
+                    <div>{jobResultMessage}</div>
                 </div>
             )}
 
