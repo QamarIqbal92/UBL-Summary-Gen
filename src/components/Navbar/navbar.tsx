@@ -114,7 +114,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
                         className="upload-image-btn"
                         onClick={handleOpenUploadModal}
                     >
-                        smart finOCR
+                        Smart FinOCR
                     </button>
                 )}
 
