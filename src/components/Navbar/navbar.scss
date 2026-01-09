@@ -32,6 +32,27 @@ nav {
     gap: 1.5rem;
   }
 
+  .upload-image-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    border: 1px solid #0d6efd;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+      background: #0b5ed7;
+      border-color: #0b5ed7;
+      box-shadow: 0 8px 16px rgba(13, 110, 253, 0.25);
+    }
+  }
+
   .admin-view-toggle {
     display: inline-flex;
     align-items: center;
@@ -153,6 +174,10 @@ nav {
           flex: 1;
           text-align: center;
         }
+      }
+
+      .upload-image-btn {
+        width: 100%;
       }
     }
   }

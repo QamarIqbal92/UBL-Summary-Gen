@@ -6,6 +6,7 @@ import { IoMenu, IoClose } from 'react-icons/io5';
 import './navbar.scss';
 import logo from '../../assets/images/ubl-logo.png';
 import { type UserRole } from '../../types/auth';
+import UploadImageModal from '../UploadImageModal/upload-image-modal';
 
 interface NavBarProps {
     isFocusMode: boolean;
@@ -16,6 +17,7 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const role = (localStorage.getItem('userRole') as UserRole | null) ?? null;
     const isSuperAdmin = role === 'superAdmin';
     const isUploadActive = location.pathname.startsWith('/upload');
@@ -50,6 +52,13 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
             return;
         }
         onFocusToggle();
+        if (isOpen) {
+            setIsOpen(false);
+        }
+    };
+
+    const handleOpenUploadModal = () => {
+        setIsUploadModalOpen(true);
         if (isOpen) {
             setIsOpen(false);
         }
@@ -99,12 +108,26 @@ const NavBar = ({ isFocusMode, onFocusToggle }: NavBarProps) => {
                     </div>
                 )}
 
+                {isSuperAdmin && (
+                    <button
+                        type="button"
+                        className="upload-image-btn"
+                        onClick={handleOpenUploadModal}
+                    >
+                        smart finOCR
+                    </button>
+                )}
+
                 <UserProfile onLogout={handleLogout} />
 
                 <button className="mobile-logout-btn" onClick={handleLogout}>
                     Logout
                 </button>
             </div>
+
+            {isUploadModalOpen && (
+                <UploadImageModal onClose={() => setIsUploadModalOpen(false)} />
+            )}
         </nav>
     );
 };
