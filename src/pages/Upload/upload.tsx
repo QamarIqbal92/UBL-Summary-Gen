@@ -5,15 +5,6 @@ import './upload.scss';
 const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx'];
 
 const Upload = () => {
-    const [userName] = useState(() => {
-        const storedName = localStorage.getItem('userName')?.trim();
-        if (storedName) {
-            return storedName;
-        }
-        const storedEmail = localStorage.getItem('userEmail') ?? '';
-        const emailName = storedEmail.split('@')[0]?.trim();
-        return emailName || 'user';
-    });
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [sentFiles, setSentFiles] = useState<string[]>([]);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -112,6 +103,7 @@ const Upload = () => {
             return;
         }
 
+        const usernameFromStorage = localStorage.getItem('userName')?.trim() || 'user';
         const fileNames = selectedFiles.map((file) => file.name);
         const formData = new FormData();
         selectedFiles.forEach((file) => {
@@ -125,12 +117,12 @@ const Upload = () => {
         setErrorMessage(null);
 
         try {
-            const response = await uploadDocuments(formData, userName || 'user');
+            const response = await uploadDocuments(formData, usernameFromStorage);
             const responseMessage = response?.data?.message as string | undefined;
             const jobId = response?.data?.job_id as string | undefined;
 
             setUploadResponseMessage(responseMessage ?? null);
-            setStatusMessage(`The following documents have been sent by ${userName || 'user'}:`);
+            setStatusMessage(`The following documents have been sent by ${usernameFromStorage}:`);
             setSentFiles(fileNames);
             setSelectedFiles([]);
 
