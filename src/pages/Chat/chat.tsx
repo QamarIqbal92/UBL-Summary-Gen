@@ -136,7 +136,7 @@ const Chat = ({ userInput }: ChatScreenProps) => {
             });
 
             const data = response.data.answer;
-            const botText = data.answer || "I'm sorry, I couldn't find an answer.";
+            const botText = data || "I'm sorry, I couldn't find an answer.";
 
             const botMessage: Message = {
                 id: `bot-${Date.now()}`,
